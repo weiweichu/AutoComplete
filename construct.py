@@ -5,6 +5,7 @@ from collections import Counter
 import json
 from textblob import TextBlob
 
+
 # Class to for trie node
 class TrieNode(object):
     def __init__(self, char):
@@ -29,6 +30,7 @@ class AutoComplete():
         self.fname = "sample_conversations.json"
         self.ngram_n = 5
         self.num_completion = 5
+        self.ngram_dict = {}
         self.root = TrieNode("*")
 
     def add(self, question):
@@ -147,7 +149,7 @@ class AutoComplete():
         # correct spelling error
         print("Checking spelling...This will take for a while...")
         agent_questions_corrected = agent_questions_cleaned
-        #agent_questions_corrected = [str(TextBlob(i).correct()) for i in agent_questions_cleaned]
+        # agent_questions_corrected = [str(TextBlob(i).correct()) for i in agent_questions_cleaned]
         # remove repeated questions
         questions = list(set(agent_questions_corrected))
 
@@ -159,8 +161,8 @@ class AutoComplete():
             frequencies += Counter(ngram)
         # Map ngram to questions from low frequency to high frequency gram
         temp = []
-        sorted_questions_all = []
         ngrams = []
+        sorted_questions_all = []
         visited = set()
         for row, freq in frequencies.most_common()[::-1]:
             gram = ' '.join(row)
@@ -175,10 +177,17 @@ class AutoComplete():
                 temp = []
         # Get one question to represent a ngram
         sorted_questions = [s[0] for s in sorted_questions_all]
-        gram_and_question = dict(zip(ngrams, sorted_questions))
-        with open("ngram_and_question.json", 'w') as w:
-            json.dump(gram_and_question, w)
-        return sorted_questions
+        self.ngram_dict = dict(zip(ngrams, sorted_questions))
+        with open("ngram_dict.json", 'w') as w:
+            json.dump(self.ngram_dict, w)
+
+    def read_ngram_dict(self):
+        """
+        Read ngram dictionary
+        :return:
+        """
+        with open(self.fname) as f:
+            self.ngram_dict = json.load(f)
 
     def construct_trie(self, sorted_questions):
         """
@@ -187,16 +196,25 @@ class AutoComplete():
         :return:
         """
         print("Almost there! Preparing to make completions...")
-        for question in sorted_questions:
+        for question in self.ngram_dict.values():
             self.add(question)
 
-    def run(self):
+    def run_from_ngram_dict(self):
         """
-        Analyze conversation, extract questions and construct trie
+        Read existing ngram json file and construct trie
         :return:
         """
-        questions = self.clean_conversations()
-        self.construct_trie(questions)
+        self.read_ngram_dict()
+        self.construct_trie(self.ngram_dict.values())
+        print("Ready to go!")
+
+    def run_from_sample_conversation(self):
+        """
+        Analyze sample conversation, extract questions and construct trie
+        :return:
+        """
+        self.clean_conversations()
+        self.construct_trie(self.ngram_dict.values())
         print("Ready to go!")
 
     def auto_completion(self, prefix):

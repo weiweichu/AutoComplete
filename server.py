@@ -46,12 +46,13 @@ def create_parser():
     parser.add_argument('-port', dest='port', default=8000,
                         help='Port number')
     parser.add_argument('-f', dest='fname', default='sample_conversations.json',
-                        help='Path to sample conversation file')
+                        help='Path to sample conversation file or ngram dictionary json file')
     parser.add_argument('-ngram', dest='ngram', default=5,
                         help='Number of grams used in text analysis')
     parser.add_argument('-n', dest='ncompletion', default=5,
                         help='Number of completed questions returned')
-
+    parser.add_argument('-s', dest='source', default=0,
+                        help='Get ngram from sample conversation(0) or from ngram dictionary(1)')
     return parser
 
 
@@ -62,6 +63,7 @@ if __name__ == '__main__':
     HOST = args.host
     PORT_NUMBER = int(args.port)
     ROUTE_INDEX = "/autocomplete"
+    source = int(args.source)
     auto = AutoComplete()
     auto.fname = args.fname
     auto.ngram_n = int(args.ngram)
@@ -70,8 +72,12 @@ if __name__ == '__main__':
     try:
         # Create a web server and define the handler to manage the
         # incoming request
-
-        auto.run()
+        if source == 0:
+            auto.run_from_sample_conversation()
+        elif source == 1:
+            auto.run_from_ngram_dict()
+        else:
+            print ("no such source implemented")
         server = HTTPServer(('', PORT_NUMBER), myHandler)
         print("Starting server, use <Ctrl-C> to stop...")
         print(u"Open {0}://{1}:{2}{3} in a web browser.".format(PROTOCOL,
